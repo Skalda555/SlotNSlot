@@ -68,7 +68,7 @@ const LINE_CASES = [
 // Function of getting Combinations in Array for calculateSlot
 // source : https://gist.github.com/axelpale/3118596
 function kComb(set, k) {
-  var i, j, combs, head, tailcombs;
+  let i, j, combs, head, tailcombs;
   if (k > set.length || k <= 0) {
     return [];
   }
@@ -148,6 +148,8 @@ export default class SlotGame {
     this.blurFilter = new PIXI.filters.BlurYFilter(10);
     this.lsdFilter = new PIXI.filters.ColorMatrixFilter();
     this.lsdFilter.lsd();
+    this.darkFilter = new PIXI.filters.ColorMatrixFilter();
+    this.darkFilter.brightness(0.5);
     this.winLines = new PIXI.Graphics();
     // Game Variable Initialization
     this.stage = null;
@@ -192,6 +194,56 @@ export default class SlotGame {
       this.reelGroup[index] = new PIXI.Container();
       this.reelGroup[index].vy = 0;
     });
+    // Add the canvas to the HTML document
+    PIXI.loader
+      .add([
+        { url: 'assets/images/symbolsMap.json', crossOrigin: true },
+        { url: 'assets/images/slotMap.json', crossOrigin: true },
+        { url: 'https://d1qh7kd1bid312.cloudfront.net/big-win-front@2x.png', crossOrigin: true },
+        { url: 'https://d1qh7kd1bid312.cloudfront.net/circle-big-win-15-x@2x.png', crossOrigin: true },
+        { url: 'https://d1qh7kd1bid312.cloudfront.net/oval-14@2x.png', crossOrigin: true },
+        { url: 'https://d1qh7kd1bid312.cloudfront.net/auto-stop@2x.png', crossOrigin: true },
+        'assets/images/slot/combined-shape@2x.png',
+        'assets/images/slot/player-stake@2x.png',
+      ])
+      .on('progress', (loader, resource) => {
+        console.log('LOADING...');
+      })
+      .load(() => {
+        this.drawUI();
+        // Make frame list from spriteSheets symbol by symbol.
+        const spritesNum = [9, 7, 6, 7, 6, 9, 24, 19, 23, 24, 24, 24, 24];
+        for (let i = 1; i <= ALL_SYMBOL_COUNT; i += 1) {
+          const imglist = [];
+          for (let j = 0; j < spritesNum[i - 1]; j += 1) {
+            const val = j < 10 ? `0${j}` : j;
+            const frame = PIXI.Texture.fromFrame(`Symbol${i}_${val}.png`);
+            imglist.push(frame);
+          }
+          this.symbols[i - 1] = imglist;
+        }
+        // Random symbol's coordinates are set per reelGroup.
+        for (let reelNum = 0; reelNum < ENTIRE_REEL_COUNT; reelNum += 1) {
+          for (let idx = 0; idx < ITEM_PER_ENTIRE_REEL; idx += 1) {
+            const randomNum = Math.floor(Math.random() * ALL_SYMBOL_COUNT);
+            const symbol = new PIXI.extras.AnimatedSprite(this.symbols[randomNum]);
+            symbol.width = SYMBOL_WIDTH;
+            symbol.height = SYMBOL_HEIGHT;
+            symbol.x = 0;
+            symbol.y =
+              idx < ITEMS_PER_HALF_REEL
+                ? (symbol.height + SYMBOL_HEIGHT_GAP) * idx
+                : (symbol.height + SYMBOL_HEIGHT_GAP) * (idx - ITEMS_PER_HALF_REEL);
+            symbol.animationSpeed = 0.3;
+            symbol.play();
+            if (idx < ITEMS_PER_HALF_REEL) {
+              this.reelGroup[reelNum * 2].addChild(symbol);
+            } else {
+              this.reelGroup[reelNum * 2 + 1].addChild(symbol);
+            }
+          }
+          this.reelContainer.addChild(this.reelGroup[reelNum * 2]);
+          this.reelContainer.addChild(this.reelGroup[reelNum * 2 + 1]);
 
     if (isEmpty(PIXI.utils.TextureCache)) {
       PIXI.loader
@@ -840,6 +892,7 @@ export default class SlotGame {
             minDist = distance;
             minCombIndex = j;
           }
+          if (overLapping) break;
         }
         // minCombIndex is still undefined After loop, we can't draw it.
         if (minCombIndex === undefined) return 'BIG_WIN';
@@ -857,15 +910,22 @@ export default class SlotGame {
           };
           this.drawingLines.push(drawingLine);
         }
-        // We have to delete lines where we find min distance for quality.
-        let lastIndex = 0;
-        const newUsableLines = [];
-        for (let j = 0; j < combArr[minCombIndex].length; j += 1) {
-          newUsableLines.push(...usableLines.slice(lastIndex, combArr[minCombIndex][j]));
-          lastIndex = combArr[minCombIndex][j] + 1;
+      }
+      // minCombIndex is still undefined After loop, we can't draw it.
+      if (minCombIndex === undefined) return 'BIG_WIN';
+      // We have to insert that combination of lines to slotLineInfo.
+      for (let j = 0; j < combArr[minCombIndex].length; j += 1) {
+        const lineIndex = combArr[minCombIndex][j];
+        for (let k = 0; k < sameSymbolObj[symbol][j].length; k += 1) {
+          const slotY = usableLines[lineIndex][k];
+          slotLineInfo[k][slotY] = symbol;
         }
-        newUsableLines.push(...usableLines.slice(lastIndex, usableLines.length));
-        usableLines = newUsableLines;
+        drawingLine = {
+          lineNum: usableLines[lineIndex][5], // Fifth index is original win lineNum.
+          symbol: parseInt(symbol, 10),
+          length: sameSymbolObj[symbol][j].length,
+        };
+        this.drawingLines.push(drawingLine);
       }
       // After draw same symbol lines, we have to draw single symbol lines.
       for (let i = 0; i < singleSymbolArr.length; i += 1) {
@@ -896,10 +956,25 @@ export default class SlotGame {
             break;
           }
         }
-        if (!drawable) return 'BIG_WIN';
+        // If not overLapping, 'i' drawingLine is drawn with 'j' usableLines.
+        if (!overLapping) {
+          for (let k = 0; k < lineInfos[i].length; k += 1) {
+            const slotY = usableLines[j][k];
+            slotLineInfo[k][slotY] = singleSymbolArr[i].symbol;
+          }
+          drawingLine = {
+            lineNum: usableLines[j][5],
+            symbol: parseInt(singleSymbolArr[i].symbol, 10),
+            length: singleSymbolArr[i].length,
+          };
+          this.drawingLines.push(drawingLine);
+          drawable = true;
+          break;
+        }
       }
-      return 'DRAW_LINE';
+      if (!drawable) return 'BIG_WIN';
     }
+    return 'DRAW_LINE';
   }
 
   changeSlot() {
@@ -1023,7 +1098,12 @@ export default class SlotGame {
     const Graphics = PIXI.Graphics;
     const Text = PIXI.Text;
 
-    const mergedBackground = new Sprite(TextureCache['mergedImage.png']);
+    let mergedBackground = null;
+    if (this.isOwnerPage) {
+      mergedBackground = new Sprite.fromImage('assets/images/slot/combined-shape@2x.png');
+    } else {
+      mergedBackground = new Sprite(TextureCache['mergedImage.png']);
+    }
     mergedBackground.position.set(0, 0);
     mergedBackground.width = 940;
     mergedBackground.height = 660;
@@ -1047,7 +1127,12 @@ export default class SlotGame {
     this.slotNameText.anchor.set(0.5, 0.5);
     this.slotNameText.position.set(470, 120);
 
-    const yourStake = new Sprite(TextureCache['your-stake.png']);
+    let yourStake = null;
+    if (this.isOwnerPage) {
+      yourStake = new Sprite.fromImage('assets/images/slot/player-stake@2x.png');
+    } else {
+      yourStake = new Sprite(TextureCache['your-stake.png']);
+    }
     yourStake.position.set(41.8, 12.3);
     yourStake.width = 351;
     yourStake.height = 60;
@@ -1107,30 +1192,14 @@ export default class SlotGame {
     betMinusBtn.beginFill(0, 0);
     betMinusBtn.drawRect(194, 583, 38, 57);
     betMinusBtn.interactive = true;
-    betMinusBtn.buttonMode = true;
-    betMinusBtn.on('pointerdown', () => {
-      if (this.gameState !== STATE_WAITING) return;
-      if (this.betSize - this.betUnit >= this.minBet) {
-        this.setBetSize(this.betSize.minus(this.betUnit));
-      } else {
-        this.setBetSize(Big(this.minBet));
-      }
-    });
+    betMinusBtn.buttonMode = !this.isOwnerPage;
     betMinusBtn.endFill();
 
     const betPlusBtn = new Graphics();
     betPlusBtn.beginFill(0, 0);
     betPlusBtn.drawRect(333, 583, 38, 57);
     betPlusBtn.interactive = true;
-    betPlusBtn.buttonMode = true;
-    betPlusBtn.on('pointerdown', () => {
-      if (this.gameState !== STATE_WAITING) return;
-      if (this.betSize + this.betUnit <= this.maxBet) {
-        this.setBetSize(this.betSize.plus(this.betUnit));
-      } else {
-        this.setBetSize(Big(this.maxBet));
-      }
-    });
+    betPlusBtn.buttonMode = !this.isOwnerPage;
     betPlusBtn.endFill();
 
     const maxBet = new Sprite(TextureCache['max-bet.png']);
@@ -1138,12 +1207,7 @@ export default class SlotGame {
     maxBet.width = 63;
     maxBet.height = 65;
     maxBet.interactive = true;
-    maxBet.buttonMode = true;
-    maxBet.on('pointerdown', () => {
-      if (this.gameState !== STATE_WAITING) return;
-      this.setBetSize(this.maxBet);
-      this.setLineNum(20);
-    });
+    maxBet.buttonMode = !this.isOwnerPage;
 
     const lineNum = new Sprite(TextureCache['line.png']);
     lineNum.position.set(436, 580);
@@ -1163,52 +1227,84 @@ export default class SlotGame {
     lineMinusBtn.beginFill(0, 0);
     lineMinusBtn.drawRect(440, 583, 38, 57);
     lineMinusBtn.interactive = true;
-    lineMinusBtn.buttonMode = true;
-    lineMinusBtn.on('pointerdown', () => {
-      if (this.gameState !== STATE_WAITING) return;
-      if (this.lineNum > 1) {
-        this.setLineNum(this.lineNum - 1);
-      }
-    });
+    lineMinusBtn.buttonMode = !this.isOwnerPage;
     lineMinusBtn.endFill();
 
     const linePlusBtn = new Graphics();
     linePlusBtn.beginFill(0, 0);
     linePlusBtn.drawRect(580, 583, 38, 57);
     linePlusBtn.interactive = true;
-    linePlusBtn.buttonMode = true;
-    linePlusBtn.on('pointerdown', () => {
-      if (this.gameState !== STATE_WAITING) return;
-      if (this.lineNum < 20) {
-        this.setLineNum(this.lineNum + 1);
-      }
-    });
+    linePlusBtn.buttonMode = !this.isOwnerPage;
     linePlusBtn.endFill();
 
     const spinBtn = new Sprite(TextureCache['spin.png']);
     spinBtn.interactive = true;
-    spinBtn.buttonMode = true;
-    spinBtn.on('pointerdown', this.startSpin);
+    spinBtn.buttonMode = !this.isOwnerPage;
     spinBtn.position.set(620, 580);
     spinBtn.width = 186;
     spinBtn.height = 65;
 
     this.autoBtn = new Sprite(TextureCache['auto.png']);
     this.autoBtn.interactive = true;
-    this.autoBtn.buttonMode = true;
-    this.autoBtn.on('pointerdown', this.autoSpinSwitch);
+    this.autoBtn.buttonMode = !this.isOwnerPage;
     this.autoBtn.position.set(804, 580);
     this.autoBtn.width = 93;
     this.autoBtn.height = 65;
 
     this.autoStopBtn = new Sprite.fromImage('assets/images/slot/auto-stop@2x.png');
     this.autoStopBtn.interactive = true;
-    this.autoStopBtn.buttonMode = true;
-    this.autoStopBtn.on('pointerdown', this.autoSpinSwitch);
+    this.autoStopBtn.buttonMode = !this.isOwnerPage;
     this.autoStopBtn.position.set(804, 580);
     this.autoStopBtn.width = 93;
     this.autoStopBtn.height = 65;
     this.autoStopBtn.visible = false;
+
+    // For Owner Page
+    if (this.isOwnerPage) {
+      betAmount.filters = [this.darkFilter];
+      betSize.filters = [this.darkFilter];
+      lineNum.filters = [this.darkFilter];
+      spinBtn.filters = [this.darkFilter];
+      maxBet.filters = [this.darkFilter];
+      this.autoBtn.filters = [this.darkFilter];
+    } else {
+      betMinusBtn.on('pointerdown', () => {
+        if (this.gameState !== STATE_WAITING) return;
+        if (this.betSize - this.betUnit >= this.minBet) {
+          this.setBetSize(this.betSize.minus(this.betUnit));
+        } else {
+          this.setBetSize(Big(this.minBet));
+        }
+      });
+      betPlusBtn.on('pointerdown', () => {
+        if (this.gameState !== STATE_WAITING) return;
+        if (this.betSize + this.betUnit <= this.maxBet) {
+          this.setBetSize(this.betSize.plus(this.betUnit));
+        } else {
+          this.setBetSize(Big(this.maxBet));
+        }
+      });
+      maxBet.on('pointerdown', () => {
+        if (this.gameState !== STATE_WAITING) return;
+        this.setBetSize(this.maxBet);
+        this.setLineNum(20);
+      });
+      lineMinusBtn.on('pointerdown', () => {
+        if (this.gameState !== STATE_WAITING) return;
+        if (this.lineNum > 1) {
+          this.setLineNum(this.lineNum - 1);
+        }
+      });
+      linePlusBtn.on('pointerdown', () => {
+        if (this.gameState !== STATE_WAITING) return;
+        if (this.lineNum < 20) {
+          this.setLineNum(this.lineNum + 1);
+        }
+      });
+      spinBtn.on('pointerdown', this.startSpin);
+      this.autoBtn.on('pointerdown', this.autoSpinSwitch);
+      this.autoStopBtn.on('pointerdown', this.autoSpinSwitch);
+    }
 
     this.stage.addChild(slotBackground);
     this.UIContainer.addChild(mergedBackground);
