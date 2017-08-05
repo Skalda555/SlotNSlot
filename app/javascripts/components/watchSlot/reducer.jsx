@@ -1,13 +1,14 @@
 import { fromJS } from 'immutable';
 import { ACTION_TYPES } from './actions';
 import Web3Service from '../../helpers/web3Service';
+import Big from 'big.js';
 
 export const WATCH_SLOT_INITIAL_STATE = fromJS({
   isLoading: false,
   isPlaying: false,
   isOccupied: false,
   hasError: false,
-  betSize: 20,
+  betSize: Big(20),
   lineNum: 20,
   deposit: 0,
   bankRoll: 0,
@@ -16,6 +17,8 @@ export const WATCH_SLOT_INITIAL_STATE = fromJS({
   maxBet: 20,
   slotMachineContract: null,
   recentTxHash: '',
+  initEventQueue: [],
+  confirmEventQueue: [],
 });
 
 export function reducer(state = WATCH_SLOT_INITIAL_STATE, action) {
@@ -42,10 +45,10 @@ export function reducer(state = WATCH_SLOT_INITIAL_STATE, action) {
         return currentState
           .set('isLoading', false)
           .set('hasError', false)
-          .set('minBet', parseFloat(action.payload.minBet))
-          .set('betSize', parseFloat(action.payload.minBet))
-          .set('maxBet', parseFloat(action.payload.maxBet))
-          .set('betUnit', parseFloat(action.payload.minBet))
+          .set('minBet', action.payload.minBet)
+          .set('betSize', action.payload.minBet)
+          .set('maxBet', action.payload.maxBet)
+          .set('betUnit', action.payload.minBet)
           .set('bankRoll', action.payload.bankRoll) // Big Number
           .set('deposit', action.payload.deposit) // Big Number
           .set('slotMachineContract', action.slotMachineContract);

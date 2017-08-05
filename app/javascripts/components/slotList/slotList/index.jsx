@@ -15,7 +15,9 @@ const SlotList = ({ slotContracts, isMaking = false, showMakeItem = false }) => 
 
   const slotItemsNode = slotContracts.map((slotContract, index) => {
     // TODO : remove Btn for removing bankrupted slots.
-    return <SlotListItem slotContract={slotContract} key={slotContract.get('contract').address} />;
+    return (
+      <SlotListItem slotContract={slotContract} key={slotContract.get('contract').address} isBanker={showMakeItem} />
+    );
   });
 
   return (

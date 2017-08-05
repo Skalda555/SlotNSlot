@@ -45,8 +45,8 @@ class WatchSlot extends React.PureComponent {
       betUnit: watchSlotState.get('betUnit'),
       minBet: watchSlotState.get('minBet'),
       maxBet: watchSlotState.get('maxBet'),
-      bankRoll: Web3Service.makeEthFromWei(watchSlotState.get('bankRoll')),
-      yourStake: Web3Service.makeEthFromWei(watchSlotState.get('deposit')),
+      bankRoll: watchSlotState.get('bankRoll'),
+      yourStake: watchSlotState.get('deposit'),
       isOwnerPage: true,
     });
   }
@@ -62,8 +62,8 @@ class WatchSlot extends React.PureComponent {
       this.slotGame.maxBet = watchSlotState.get('maxBet');
       this.slotGame.minBet = watchSlotState.get('minBet');
       this.slotGame.hasError = watchSlotState.get('hasError');
-      this.slotGame.bankRoll = Web3Service.makeEthFromWei(watchSlotState.get('bankRoll'));
-      this.slotGame.yourStake = Web3Service.makeEthFromWei(watchSlotState.get('deposit'));
+      this.slotGame.bankRoll = watchSlotState.get('bankRoll');
+      this.slotGame.yourStake = watchSlotState.get('deposit');
 
       if (watchSlotState.get('slotMachineContract')) {
         this.watchGame(watchSlotState.get('slotMachineContract'));

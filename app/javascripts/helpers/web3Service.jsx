@@ -34,7 +34,7 @@ class Web3Service {
     this.storageAddr = null;
     this.myInitializedGameInitWatchers = {};
 
-    if (typeof web3 === 'undefined') {
+    if (typeof web3 !== 'undefined') {
       // Use Mist/MetaMask's provider
       this.web3 = new Web3(window.web3.currentProvider);
       const SlotManagerContract = this.web3.eth.contract(managerABI);
@@ -504,6 +504,8 @@ class Web3Service {
                     resolve(result);
                   }
                 } else {
+                  console.log(eventName, 'cocacola');
+                  console.log(result);
                   contractFilter.stopWatching();
                   resolve(result);
                 }
@@ -603,6 +605,22 @@ class Web3Service {
             const ethResult = this.makeEthFromWei(weiResult);
             resolve(ethResult);
           }
+        })
+        .catch(error => {
+          console.log('getSlotResult error is ', error);
+          reject(error);
+        });
+    });
+  }
+
+  async getWatchResult(slotMachineContract) {
+    return await new Promise((resolve, reject) => {
+      this.getContractPendingTransaction(slotMachineContract.address, 'gameConfirmed')
+        .then(result => {
+          const uintResult = result.data.substring(0, 66);
+          const weiResult = this.web3.toDecimal(`${uintResult}`);
+          const ethResult = this.makeEthFromWei(weiResult);
+          resolve(ethResult);
         })
         .catch(error => {
           console.log('getSlotResult error is ', error);
