@@ -47,6 +47,7 @@ class WatchSlot extends React.PureComponent {
       maxBet: watchSlotState.get('maxBet'),
       bankRoll: watchSlotState.get('bankRoll'),
       yourStake: watchSlotState.get('deposit'),
+      slotName: watchSlotState.get('slotName'),
       isOwnerPage: true,
     });
   }
@@ -64,6 +65,7 @@ class WatchSlot extends React.PureComponent {
       this.slotGame.hasError = watchSlotState.get('hasError');
       this.slotGame.bankRoll = watchSlotState.get('bankRoll');
       this.slotGame.yourStake = watchSlotState.get('deposit');
+      this.slotGame.slotName = watchSlotState.get('slotName');
 
       if (watchSlotState.get('slotMachineContract')) {
         this.watchGame(watchSlotState.get('slotMachineContract'));
@@ -98,11 +100,15 @@ class WatchSlot extends React.PureComponent {
   }
 
   render() {
+    const { watchSlotState } = this.props;
+
     return (
       <div className={styles.watchSlotSection}>
         <div className={styles.watchSlotContainer}>
           <div className={styles.innerHeader}>
-            <div className={styles.slotName}>Slot Name</div>
+            <div className={styles.slotName}>
+              ✨{watchSlotState.get('slotName')}✨
+            </div>
             <div className={styles.rightBtns}>
               <button
                 className={styles.helpBtn}

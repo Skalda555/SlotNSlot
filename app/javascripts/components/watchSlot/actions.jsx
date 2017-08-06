@@ -171,6 +171,12 @@ export function watchSlotInfo(slotContract) {
   return async dispatch => {
     try {
       const result = await Web3Service.getContractPendingTransaction(slotContract.address, 'gameInitialized');
+      dispatch({
+        type: ACTION_TYPES.ADD_INIT_EVENT_QUEUE,
+        payload: {
+          event: result,
+        },
+      });
       const data = result.data.substr(2);
       console.log(data);
       const _betSize = Web3Service.makeEthFromWei(parseInt(data.substr(64, 64), 16));
@@ -228,5 +234,14 @@ export function receiveSlotResult(playInfo, stopSpinFunc) {
         type: ACTION_TYPES.FAILED_TO_WATCH_GAME,
       });
     }
+  };
+}
+
+export function addInitQueue(initEvent) {
+  return {
+    type: ACTION_TYPES.ADD_INIT_EVENT_QUEUE,
+    payload: {
+      event: initEvent,
+    },
   };
 }

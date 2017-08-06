@@ -19,6 +19,7 @@ export const WATCH_SLOT_INITIAL_STATE = fromJS({
   recentTxHash: '',
   initEventQueue: [],
   confirmEventQueue: [],
+  slotName: '',
 });
 
 export function reducer(state = WATCH_SLOT_INITIAL_STATE, action) {
@@ -51,7 +52,8 @@ export function reducer(state = WATCH_SLOT_INITIAL_STATE, action) {
           .set('betUnit', action.payload.minBet)
           .set('bankRoll', action.payload.bankRoll) // Big Number
           .set('deposit', action.payload.deposit) // Big Number
-          .set('slotMachineContract', action.slotMachineContract);
+          .set('slotMachineContract', action.slotMachineContract)
+          .set('slotName', action.payload.slotName);
       });
     }
 
@@ -120,6 +122,14 @@ export function reducer(state = WATCH_SLOT_INITIAL_STATE, action) {
 
     case ACTION_TYPES.SPIN_END: {
       return state.set('isSpinning', false);
+    }
+
+    case ACTION_TYPES.ADD_INIT_EVENT_QUEUE: {
+      const queue = state.get('initEventQueue');
+      queue.push(action.payload.event);
+      console.log('hero');
+      console.log(queue);
+      return state.set('initEventQueue', queue);
     }
 
     default:

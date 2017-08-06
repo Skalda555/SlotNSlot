@@ -844,7 +844,6 @@ export default class SlotGame {
             minDist = distance;
             minCombIndex = j;
           }
-          if (overLapping) break;
         }
         // minCombIndex is still undefined After loop, we can't draw it.
         if (minCombIndex === undefined) return 'BIG_WIN';
@@ -862,22 +861,15 @@ export default class SlotGame {
           };
           this.drawingLines.push(drawingLine);
         }
-      }
-      // minCombIndex is still undefined After loop, we can't draw it.
-      if (minCombIndex === undefined) return 'BIG_WIN';
-      // We have to insert that combination of lines to slotLineInfo.
-      for (let j = 0; j < combArr[minCombIndex].length; j += 1) {
-        const lineIndex = combArr[minCombIndex][j];
-        for (let k = 0; k < sameSymbolObj[symbol][j].length; k += 1) {
-          const slotY = usableLines[lineIndex][k];
-          slotLineInfo[k][slotY] = symbol;
+        // We have to delete lines where we find min distance for quality.
+        let lastIndex = 0;
+        const newUsableLines = [];
+        for (let j = 0; j < combArr[minCombIndex].length; j += 1) {
+          newUsableLines.push(...usableLines.slice(lastIndex, combArr[minCombIndex][j]));
+          lastIndex = combArr[minCombIndex][j] + 1;
         }
-        drawingLine = {
-          lineNum: usableLines[lineIndex][5], // Fifth index is original win lineNum.
-          symbol: parseInt(symbol, 10),
-          length: sameSymbolObj[symbol][j].length,
-        };
-        this.drawingLines.push(drawingLine);
+        newUsableLines.push(...usableLines.slice(lastIndex, usableLines.length));
+        usableLines = newUsableLines;
       }
       // After draw same symbol lines, we have to draw single symbol lines.
       for (let i = 0; i < singleSymbolArr.length; i += 1) {
@@ -908,25 +900,10 @@ export default class SlotGame {
             break;
           }
         }
-        // If not overLapping, 'i' drawingLine is drawn with 'j' usableLines.
-        if (!overLapping) {
-          for (let k = 0; k < lineInfos[i].length; k += 1) {
-            const slotY = usableLines[j][k];
-            slotLineInfo[k][slotY] = singleSymbolArr[i].symbol;
-          }
-          drawingLine = {
-            lineNum: usableLines[j][5],
-            symbol: parseInt(singleSymbolArr[i].symbol, 10),
-            length: singleSymbolArr[i].length,
-          };
-          this.drawingLines.push(drawingLine);
-          drawable = true;
-          break;
-        }
+        if (!drawable) return 'BIG_WIN';
       }
-      if (!drawable) return 'BIG_WIN';
+      return 'DRAW_LINE';
     }
-    return 'DRAW_LINE';
   }
 
   changeSlot() {
