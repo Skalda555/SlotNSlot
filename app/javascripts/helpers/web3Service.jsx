@@ -504,8 +504,6 @@ class Web3Service {
                     resolve(result);
                   }
                 } else {
-                  console.log(eventName, 'cocacola');
-                  console.log(result);
                   contractFilter.stopWatching();
                   resolve(result);
                 }

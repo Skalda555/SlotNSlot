@@ -4,6 +4,7 @@ import SlotGame from '../playSlot/game';
 import * as Actions from './actions';
 import Web3Service from '../../helpers/web3Service';
 import styles from './watchSlot.scss';
+import Store from 'store';
 
 let gameAlreadyLoaded = false;
 let slotMachineLoaded = false;
@@ -50,6 +51,8 @@ class WatchSlot extends React.PureComponent {
       slotName: watchSlotState.get('slotName'),
       isOwnerPage: true,
     });
+
+    Store.set('initEvent', {});
   }
 
   componentWillReceiveProps(nextProps) {
@@ -71,12 +74,13 @@ class WatchSlot extends React.PureComponent {
         this.watchGame(watchSlotState.get('slotMachineContract'));
       }
 
-      console.log(`
-      prev: ${this.props.watchSlotState.get('recentTxHash')}
-      next: ${watchSlotState.get('recentTxHash')}
-      `);
-
-      if (this.props.watchSlotState.get('recentTxHash') !== watchSlotState.get('recentTxHash')) {
+      // if (this.props.watchSlotState.get('recentTxHash') !== watchSlotState.get('recentTxHash')) {
+      const curInitEvent = Store.get('initEvent');
+      const recentTxHash = watchSlotState.get('recentTxHash');
+      const spinEvent = curInitEvent[recentTxHash];
+      if (spinEvent) {
+        curInitEvent[recentTxHash] = false;
+        Store.set('initEvent', curInitEvent);
         this.slotGame.startSpin();
         this.watchGameResult(watchSlotState.get('slotMachineContract'));
       }

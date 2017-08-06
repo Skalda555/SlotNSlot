@@ -1,6 +1,7 @@
 import { push } from 'react-router-redux';
 import Web3Service from '../../helpers/web3Service';
 import Toast from '../../helpers/notieHelper';
+import Store from 'store';
 // import USER_TYPES from '../slotList/actions';
 
 export const ACTION_TYPES = {
@@ -25,9 +26,6 @@ export const ACTION_TYPES = {
   START_TO_SEND_ETHER_TO_CONTRACT: 'watch_slot.START_TO_SEND_ETHER_TO_CONTRACT',
   SEND_ETHER_TO_SLOT_CONTRACT: 'watch_slot.SEND_ETHER_TO_SLOT_CONTRACT',
   FAILED_TO_SEND_ETHER_TO_CONTRACT: 'watch_slot.FAILED_TO_SEND_ETHER_TO_CONTRACT',
-
-  ADD_INIT_EVENT_QUEUE: 'watch_slot.ADD_INIT_EVENT_QUEUE',
-  ADD_CONFIRM_EVENT_QUEUE: 'watch_slot.ADD_CONFIRM_EVENT_QUEUE',
 };
 
 export function sendEtherToSlotContract(slotMachineContract, playerAccount, weiValue) {
@@ -171,12 +169,12 @@ export function watchSlotInfo(slotContract) {
   return async dispatch => {
     try {
       const result = await Web3Service.getContractPendingTransaction(slotContract.address, 'gameInitialized');
-      dispatch({
-        type: ACTION_TYPES.ADD_INIT_EVENT_QUEUE,
-        payload: {
-          event: result,
-        },
-      });
+
+      let curInitEvent = Store.get('initEvent') || {};
+      const txHash = result.transactionHash;
+      if (!(txHash in curInitEvent)) curInitEvent[txHash] = true;
+      Store.set('initEvent', curInitEvent);
+
       const data = result.data.substr(2);
       console.log(data);
       const _betSize = Web3Service.makeEthFromWei(parseInt(data.substr(64, 64), 16));
@@ -221,6 +219,8 @@ export function receiveSlotResult(playInfo, stopSpinFunc) {
         ethResult: ${ethResult}
         diffMoney: ${diffMoney}
       `);
+      const temp = Store.get('initEvent');
+      console.log(temp);
       stopSpinFunc(ethResult);
       dispatch({
         type: ACTION_TYPES.SUCCEEDED_TO_WATCH_GAME,
@@ -234,14 +234,5 @@ export function receiveSlotResult(playInfo, stopSpinFunc) {
         type: ACTION_TYPES.FAILED_TO_WATCH_GAME,
       });
     }
-  };
-}
-
-export function addInitQueue(initEvent) {
-  return {
-    type: ACTION_TYPES.ADD_INIT_EVENT_QUEUE,
-    payload: {
-      event: initEvent,
-    },
   };
 }

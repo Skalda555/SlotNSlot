@@ -17,8 +17,6 @@ export const WATCH_SLOT_INITIAL_STATE = fromJS({
   maxBet: 20,
   slotMachineContract: null,
   recentTxHash: '',
-  initEventQueue: [],
-  confirmEventQueue: [],
   slotName: '',
 });
 
@@ -122,14 +120,6 @@ export function reducer(state = WATCH_SLOT_INITIAL_STATE, action) {
 
     case ACTION_TYPES.SPIN_END: {
       return state.set('isSpinning', false);
-    }
-
-    case ACTION_TYPES.ADD_INIT_EVENT_QUEUE: {
-      const queue = state.get('initEventQueue');
-      queue.push(action.payload.event);
-      console.log('hero');
-      console.log(queue);
-      return state.set('initEventQueue', queue);
     }
 
     default:
