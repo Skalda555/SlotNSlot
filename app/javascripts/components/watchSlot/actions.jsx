@@ -154,11 +154,11 @@ export function occupySlotMachine(slotMachineContract, playerAddress, weiValue) 
   };
 }
 
-export function leaveSlotMachine(slotContract, playerAddress) {
+export function removeSlotMachine(slotContract, playerAddress) {
   return async dispatch => {
     try {
-      await Web3Service.leaveSlotMachine(slotContract, playerAddress);
-      dispatch(push('/slot/play'));
+      await Web3Service.removeSlotMachine(slotContract, playerAddress);
+      dispatch(push('/slot/make'));
     } catch (err) {
       console.error(err);
     }

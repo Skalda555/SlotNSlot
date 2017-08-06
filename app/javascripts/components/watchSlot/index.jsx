@@ -22,6 +22,7 @@ class WatchSlot extends React.PureComponent {
 
     this.slotAddress = this.props.match.params.slotAddress;
     Web3Service.createGenesisRandomNumber(this.slotAddress);
+    this.removeSlotMachine = this.removeSlotMachine.bind(this);
   }
 
   componentDidMount() {
@@ -125,7 +126,7 @@ class WatchSlot extends React.PureComponent {
               <button onClick={this.setDeposit} className={styles.headerBtn}>
                 KICK
               </button>
-              <button onClick={this.leaveSlotMachine} className={styles.headerBtn}>
+              <button onClick={this.removeSlotMachine} className={styles.headerBtn}>
                 CASH OUT
               </button>
             </div>
@@ -165,9 +166,9 @@ class WatchSlot extends React.PureComponent {
     dispatch(Actions.getSlotMachine(slotAddress, playerAddress));
   }
 
-  leaveSlotMachine() {
+  removeSlotMachine() {
     const { dispatch, root, watchSlotState } = this.props;
-    dispatch(Actions.leaveSlotMachine(watchSlotState.get('slotMachineContract'), root.get('account')));
+    dispatch(Actions.removeSlotMachine(watchSlotState.get('slotMachineContract').address, root.get('account')));
   }
 }
 
